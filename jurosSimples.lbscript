@@ -2,25 +2,20 @@ INICIO
     @@
         Problema de juros simples
     @@
-    FLOAT valor
-    FLOAT porct
-    FLOAT valorDoJuros
-    FLOAT valorComJuros    
+    FLOAT capital
+    FLOAT taxaJuros
+    FLOAT tempo
+    FLOAT juros    
 
-    escrevaTexto("Digite um valor em R$")
-    leia(valor)
+    escrevaTexto("Digite o capital:")
+    leia(capital)
+    escrevaTexto("Digite o tempo:")
+    leia(tempo)
+    escrevaTexto("Digite a taxa de juros:")
+    leia(taxaJuros)
+    taxaJuros = taxaJuros / 100
 
-    escrevaTexto("Digite um valor em %")
-    leia(porct)
-
-    valorDoJuros = (porct * 100) / valor
-
-    valorComJuros = valorDoJuros + valor
-
-
-    escrevaTexto("Valor do juros: ")
-    imprima(valorDoJuros)
-    escrevaTexto("Valor com Juros:")
-    imprima(valorComJuros)
-    
+    juros = capital * tempo * taxaJuros
+    escrevaTexto("O juros do empréstimo é: ")
+    imprima(juros)    
 FIM
