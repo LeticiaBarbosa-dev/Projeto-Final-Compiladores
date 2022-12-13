@@ -1,0 +1,47 @@
+INICIO
+    #Calcula área das formas geométricas
+
+    FLOAT base
+    FLOAT altura
+    FLOAT baseMenor
+    FLOAT area
+    FLOAT opcao
+
+    escrevaTexto("----ESCOLHA UMA DAS OPÇÕES ABAIXO----")
+    escrevaTexto("1 - Triângulo")
+    escrevaTexto("2 - Retângulo")
+    escrevaTexto("3 - Trapézio")
+
+    leia(opcao)
+
+    se (opcao == 1) {
+        escrevaTexto("Digite a base do triangulo")
+        leia(base)
+        escrevaTexto("Digite a altura do triângulo")
+        leia(altura)
+        area = (base * altura) / 2
+        escrevaTexto("--ÁREA DO TRIÂNGULO--")
+        imprima(area)
+    } 
+    se (opcao == 2) {
+        escrevaTexto("Digite a base do retângulo")
+        leia(base)
+        escrevaTexto("Digite a altura do retângulo")
+        leia(altura)
+        area = base * altura
+        escrevaTexto("--ÁREA DO RETÂNGULO--")
+        imprima(area)
+    } 
+
+    se (opcao == 3) {
+        escrevaTexto("Digite a base maior do trapézio")
+        leia(base)
+        escrevaTexto("Digite a base menor do trapézio")
+        leia(baseMenor)
+        escrevaTexto("Digite a altura do trapézio")
+        leia(altura)
+        area = ((base + baseMenor)) * altura / 2
+        escrevaTexto("--ÁREA DO TRAPÉZIO--")
+        imprima(area)
+    } 
+FIM
