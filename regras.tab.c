@@ -2121,7 +2121,7 @@ yyreturnlab:
 
 int main(){
 	
-	yyin=fopen("input.txt","r");
+	yyin=fopen("areaFormasGeometricas.lb","r");
 	yyparse();
 	yylex();
 	fclose(yyin);

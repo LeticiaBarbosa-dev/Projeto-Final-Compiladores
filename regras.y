@@ -539,7 +539,7 @@ exp1:
 
 int main(){
 	
-	yyin=fopen("","r");
+	yyin=fopen("areaFormasGeometricas.lb","r");
 	yyparse();
 	yylex();
 	fclose(yyin);
