@@ -25,7 +25,8 @@ void yyerror (char *s){
 %token <inter>INT
 %token <str>TEXTO
 %token <str>VARS
-%token COMECA TERMINA IF ELSE WHILE PRINT READ PRINT_S XP RAIZ STRING READ_S ESCREVA_TEXTO
+%token WHILE
+%token COMECA TERMINA IF ELSE PRINT READ PRINT_S XP RAIZ STRING READ_S ESCREVA_TEXTO
 %token <fn> CMP
 
 
@@ -136,7 +137,9 @@ exp1:
 
 int main(){
 	
-	yyin=fopen("jurosSimples.lbscript","r");
+	yyin=fopen("contador.lbscript","r");
+	//yyin=fopen("areaFormasGeometricas.lbscript","r");
+	// yyin=fopen("jurosSimples.lbscript","r");
 	yyparse();
 	yylex();
 	fclose(yyin);

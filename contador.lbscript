@@ -1,0 +1,9 @@
+INICIO
+    FLOAT con
+    con = 0.0
+
+    enquanto(con <= 100) {
+        imprima(con)
+        con = ICC(con)
+    }
+FIM
