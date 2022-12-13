@@ -73,410 +73,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>	
-
-	
-	typedef struct vars{//estrutura de uma variável
-		int nodetype;
-		int type;
-		int tipo;
-		char name[50];
-		double valor;
-		char valors[50];
-		int valor2;
-		double *vetor;
-		struct vars * prox;
-	}VARI;
-	
-	
-	//insere uma nova variável na lista de variáveis
-	VARI *ins(VARI*l,char n[]){
-		VARI*new =(VARI*)malloc(sizeof(VARI));
-		strcpy(new->name,n);
-		new->prox = l;
-		return new;
-	}
-
-	VARI *ins_a(VARI*l, char n[], int size) {
-		VARI*new =(VARI*)malloc(sizeof(VARI));
-		strcpy(new->name,n);
-		new->vetor = (double*)malloc(size * sizeof(double));
-		new->prox = l;
-		new->nodetype = 3;
-		return new;
-	}
-	
-	//busca uma variável na lista de variáveis
-	VARI *srch(VARI*l,char n[]){
-		VARI*aux = l;
-		while(aux != NULL){
-			if(strcmp(n,aux->name)==0)
-				return aux;
-			aux = aux->prox;
-		}
-		return aux;
-	}
-	
-		
-/*O node type serve para indicar o tipo de nó que está na árvore. Isso serve para a função eval() entender o que realizar naquele nó*/
-typedef struct ast { /*Estrutura de um nó*/
-	int nodetype;
-	struct ast *l; /*Esquerda*/
-	struct ast *r; /*Direita*/
-}Ast; 
-
-typedef struct numval { /*Estrutura de um número*/
-	int nodetype;
-	double number;
-}Numval;
-
-typedef struct varval { /*Estrutura de um nome de variável, nesse exemplo uma variável é um número no vetor var[26]*/
-	int nodetype;
-	char var[50];
-	int size;
-}Varval;
-
-
-typedef struct flow { /*Estrutura de um desvio (if/else/while)*/
-	int nodetype;
-	Ast *cond;		/*condição*/
-	Ast *tl;		/*then, ou seja, verdade*/
-	Ast *el;		/*else*/
-}Flow;
-
-typedef struct symasgn { /*Estrutura para um nó de atribuição. Para atrubior o valor de v em s*/
-	int nodetype;
-	char s[50];
-	Ast *v;
-	int pos;
-}Symasgn;
-
-typedef struct strVal { /*Estrutura de a string*/
-	int nodetype;
-	char value[50];
-}StrVal;
-
-/*Variáveis*/
-VARI *l1; /*Lista de números reais*/
-VARI *l2; /*Lista de números inteiros*/
-VARI *l3; /*Lista de strings*/
-VARI *aux;
-
-Ast * newast(int nodetype, Ast *l, Ast *r){ /*Função para criar um nó*/
-
-	Ast *a = (Ast*) malloc(sizeof(Ast));
-	if(!a) {
-		printf("out of space");
-		exit(0);
-	}
-	a->nodetype = nodetype;
-	a->l = l;
-	a->r = r;
-	return a;
-}
-
-
-Ast * newString(char str[]) { /*Função de que cria uma nova string*/
-	StrVal *a = (StrVal*) malloc(sizeof(StrVal));
-	if(!a) {
-		printf("out of space");
-		exit(0);
-	}
-	a->nodetype = 'J';
-	strcpy(a->value, str);
-	return (Ast*)a;
-}
- 
-Ast * newvari(int nodetype, char nome[50]) {			/*Função de que cria uma nova variável*/
-	Varval *a = (Varval*) malloc(sizeof(Varval));
-	if(!a) {
-		printf("out of space");
-		exit(0);
-	}
-	a->nodetype = nodetype;;
-	strcpy(a->var,nome);
-	return (Ast*)a;
-}
-
-Ast * newarray(int nodetype, char nome[50], int tam) {			/*Função de que cria uma nova variável*/
-	Varval *a = (Varval*) malloc(sizeof(Varval));
-	if(!a) {
-		printf("out of space");
-		exit(0);
-	}
-	a->nodetype = nodetype;
-	strcpy(a->var,nome);
-	a->size = tam;
-	return (Ast*)a;
-}	
-
-Ast * newnumFloat(double d) {			/*Função que cria um novo número*/
-	Numval *a = (Numval*) malloc(sizeof(Numval));
-	if(!a) {
-		printf("out of space");
-		exit(0);
-	}
-	a->nodetype = 'K';
-	a->number = d;
-	return (Ast*)a;
-}	
-
-Ast * newnumInt(int d) {			/*Função que cria um novo número*/
-	Numval *a = (Numval*) malloc(sizeof(Numval));
-	if(!a) {
-		printf("out of space");
-		exit(0);
-	}
-	a->nodetype = 'K';
-	a->number = d;
-	return (Ast*)a;
-}	
-	
-Ast * newflow(int nodetype, Ast *cond, Ast *tl, Ast *el){ /*Função que cria um nó de if/else/while*/
-	Flow *a = (Flow*)malloc(sizeof(Flow));
-	if(!a) {
-		printf("out of space");
-	exit(0);
-	}
-	a->nodetype = nodetype;
-	a->cond = cond;
-	a->tl = tl;
-	a->el = el;
-	return (Ast *)a;
-}
-
-Ast * newcmp(int cmptype, Ast *l, Ast *r){ /*Função que cria um nó para testes*/
-	Ast *a = (Ast*)malloc(sizeof(Ast));
-	if(!a) {
-		printf("out of space");
-	exit(0);
-	}
-	a->nodetype = '0' + cmptype; /*Para pegar o tipo de teste, definido no arquivo.l e utilizar na função eval()*/
-	a->l = l;
-	a->r = r;
-	return a;
-}
-
-Ast * newasgn(char s[50], Ast *v) { 		/*Função para um nó de atribuição*/
-	Symasgn *a = (Symasgn*)malloc(sizeof(Symasgn));
-	if(!a) {
-		printf("out of space");
-	exit(0);
-	}
-	a->nodetype = '=';
-	strcpy(a->s,s);
-	//a->s = s; /*Símbolo/variável*/
-	a->v = v; /*Valor*/
-	return (Ast *)a;
-}
-
-Ast * newasgn_a(char s[50], Ast *v, int indice) { /*Função para um nó de atribuição*/
-	Symasgn *a = (Symasgn*)malloc(sizeof(Symasgn));
-	if(!a) {
-		printf("out of space");
-	exit(0);
-	}
-	a->nodetype = '=';
-	strcpy(a->s,s);
-	a->v = v; /*Valor*/
-	a->pos = indice;
-	return (Ast *)a;
-}
-
-Ast * newValorVal(char s[50]) { 		/*Função que recupera o nome/referência de uma variável, neste caso o número*/
-	
-	Varval *a = (Varval*) malloc(sizeof(Varval));
-	if(!a) {
-		printf("out of space");
-		exit(0);
-	}
-	a->nodetype = 'N';
-	strcpy(a->var,s);
-	return (Ast*)a;
-	
-}
-
-Ast * newValorVal_a(char s[], int index) { /*Função que recupera o nome/referência de uma variável, neste caso o número*/
-	Varval *a = (Varval*) malloc(sizeof(Varval));
-	if(!a) {
-		printf("out of space");
-		exit(0);
-	}
-	a->nodetype = 'O';
-	strcpy(a->var,s);
-	a->size = index;
-	
-	return (Ast*)a;
-}	
-
-
-Ast * newValorValS(char s[50]) { /*Função que recupera o nome/referência de uma variável, neste caso o número*/
-	
-	Varval *a = (Varval*) malloc(sizeof(Varval));
-	if(!a) {
-		printf("out of space");
-		exit(0);
-	}
-	a->nodetype = 'Q';
-	strcpy(a->var,s);
-	return (Ast*)a;
-}
-
-char * eval2(Ast *a) { /*Função que executa operações a partir de um nó*/
-		VARI *aux1;
-		char *v2;
-		
-			switch(a->nodetype) {
-			
-			case 'Q':
-				aux1 = srch(l3,((Varval *)a)->var);
-				return aux1->valors;
-				break;
-
-			default: printf("internal error: bad node %c\n", a->nodetype);
-					break;
-		}
-		
-	return v2;
-}
-
-
-
-double eval(Ast *a) { /*Função que executa operações a partir de um nó*/
-	double v;
-	double tt;
-	char v1[50]; // string
-	int inteiros; // inteiros
-	char *v2;
-	VARI * aux1;
-	if(!a) {
-		printf("internal error, null eval");
-		return 0.0;
-	}
-	switch(a->nodetype) {
-		case 'K': v = ((Numval *)a)->number; break; 	/*Recupera um número*/
-		case 'O': 
-			aux1 = srch(l1,((Varval *)a)->var);
-			v = aux1->vetor[((Varval *)a)->size];
-			break;
-		case 'N': 
-			aux1 = srch(l1,((Varval *)a)->var);
-			if(aux1 != NULL) {
-				v = aux1->valor;
-			} else {
-				aux1 = srch(l2, ((Varval *)a)->var);
-				if(aux1 == NULL) {
-					v = aux1->valor2;
-				}
-			}
-			break;
-		case '+': v = eval(a->l) + eval(a->r); break;	/*Operações "árv esq   +   árv dir"*/
-		case '-': v = eval(a->l) - eval(a->r); break;	/*Operações*/
-		case '*': v = eval(a->l) * eval(a->r); break;	/*Operações*/
-		case '/': v = eval(a->l) / eval(a->r); break; /*Operações*/
-		case 'E': v = eval(a->l) + 1; break; /*Incremento em 1*/
-		case 'D': v = eval(a->l) - 1; break; /*Decremento em 1*/
-		case 'M': v = -eval(a->l); break;				/*Operações, número negativo*/
-		case 'X': v = pow(eval(a->l), eval(a->r)); break; /*Operações de exponenciação*/
-		case 'R': v = sqrt(eval(a->l)); break; /*Operações de raiz*/
-	
-		case '1': v = (eval(a->l) > eval(a->r))? 1 : 0; break;	/*Operações lógicas. "árv esq   >   árv dir"  Se verdade 1, falso 0*/
-		case '2': v = (eval(a->l) < eval(a->r))? 1 : 0; break;
-		case '3': v = (eval(a->l) != eval(a->r))? 1 : 0; break;
-		case '4': v = (eval(a->l) == eval(a->r))? 1 : 0; break;
-		case '5': v = (eval(a->l) >= eval(a->r))? 1 : 0; break;
-		case '6': v = (eval(a->l) <= eval(a->r))? 1 : 0; break;
-		
-		case '=':
-			// inicialmente verificar se a variável existe
-			v = eval(((Symasgn *)a)->v); /*Recupera o valor*/
-			aux = srch(l1,((Symasgn *)a)->s);
-
-			if (aux == NULL){
-				aux = srch(l2, ((Symasgn *)a)->s);
-				if(aux == NULL) {
-					printf("Variável não declarada: %s\n", ((Symasgn *)a)->s);
-				} else {
-					aux->valor2 = v;
-				}
-			} else {
-				aux->valor = v;			
-			}
-
-			if(aux->nodetype == 3){
-				aux->vetor[((Symasgn *)a)->pos] = v; //inserção no vetor
-			}
-		
-			break;
-		
-		case 'I':						/*CASO IF*/
-			if (eval(((Flow *)a)->cond) != 0) {	/*executa a condição / teste*/
-				if (((Flow *)a)->tl)		/*Se existir árvore*/
-					v = eval(((Flow *)a)->tl); /*Verdade*/
-				else
-					v = 0.0;
-			} else {
-				if( ((Flow *)a)->el) {
-					v = eval(((Flow *)a)->el); /*Falso*/
-				} else
-					v = 0.0;
-				}
-			break;
-			
-		case 'W':
-			v = 0.0;
-			if( ((Flow *)a)->tl) {
-				while( eval(((Flow *)a)->cond) != 0){
-					v = eval(((Flow *)a)->tl);
-				}
-			}
-		break;
-			
-		case 'L': 	eval(a->l);
-					v = eval(a->r);
-
-					break; /*Lista de operções em um bloco IF/ELSE/WHILE. Assim o analisador não se perde entre os blocos*/
-
-		case 'C': 	v = eval(a->l);		/*Recupera um valor*/
-					printf ("%.2lf\n", v); 
-					break;  /*Função que imprime um valor float*/
-		
-		case 'V': 	l1 = ins(l1,((Varval*)a)->var);
-					break; // FLOAT
-		
-		case 'T': 	l2 = ins(l2,((Varval*)a)->var);
-					break; // INTEIRO
-
-		case 'B': 	l3 = ins(l3,((Varval*)a)->var);
-					break; // STRING
-
-		case 'Y':	
-					v2 = eval2(a->l);		/*Recupera um valor STR*/
-					printf ("%s\n",v2);  /*Função que imprime um valor (string)*/
-					//printf ("imprimiu\n");
-					break;
-
-		case 'Z': 	scanf("%s", v1);
-					aux1 = srch(l3, ((Varval *)a)-> var);
-					strcpy(aux1 ->valors,v1);
-					break;
-		case 'p': 	
-					printf("%s\n", ((StrVal *)a->l)->value);
-					break;
-
-		case 'a':	
-					l1 = ins_a(l1,((Varval*)a)->var,((Varval*)a)->size);
-					break;
-
-		case 'G': 	scanf("%lf", &v);
-					aux1 = srch(l1, ((Varval *)a)-> var);
-					aux1 -> valor = v;				
-					break;
-		default: printf("internal error: bad node %c\n", a->nodetype);
-				
-	}
-	return v;
-}
-
+#include "lbscript-lib.h"
 
 int yylex();
 void yyerror (char *s){
@@ -484,7 +81,7 @@ void yyerror (char *s){
 }
 
 
-#line 488 "regras.tab.c"
+#line 85 "regras.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -559,7 +156,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 418 "regras.y"
+#line 15 "regras.y"
 
 	float flo;
 	int fn;
@@ -567,7 +164,7 @@ union YYSTYPE
 	char str[50];
 	Ast *a;
 
-#line 571 "regras.tab.c"
+#line 168 "regras.tab.c"
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -1021,13 +618,13 @@ static const yytype_int8 yytranslate[] =
 
 #if YYDEBUG
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
-static const yytype_int16 yyrline[] =
+static const yytype_uint8 yyrline[] =
 {
-       0,   448,   448,   451,   452,   458,   463,   468,   472,   476,
-     480,   484,   488,   489,   490,   494,   498,   502,   503,   504,
-     508,   509,   513,   514,   515,   516,   517,   518,   519,   520,
-     521,   522,   523,   524,   525,   526,   527,   528,   529,   533,
-     534
+       0,    45,    45,    48,    49,    55,    60,    65,    69,    73,
+      77,    81,    85,    86,    87,    91,    95,    99,   100,   101,
+     105,   106,   110,   111,   112,   113,   114,   115,   116,   117,
+     118,   119,   120,   121,   122,   123,   124,   125,   126,   130,
+     131
 };
 #endif
 
@@ -1673,255 +1270,255 @@ yyreduce:
   switch (yyn)
     {
   case 3: /* prog: stmt  */
-#line 451 "regras.y"
+#line 48 "regras.y"
                         {eval((yyvsp[0].a));}
-#line 1679 "regras.tab.c"
+#line 1276 "regras.tab.c"
     break;
 
   case 4: /* prog: prog stmt  */
-#line 452 "regras.y"
+#line 49 "regras.y"
                     {eval((yyvsp[0].a));}
-#line 1685 "regras.tab.c"
+#line 1282 "regras.tab.c"
     break;
 
   case 5: /* stmt: IF '(' exp ')' '{' list '}'  */
-#line 459 "regras.y"
+#line 56 "regras.y"
                 {
 			(yyval.a) = newflow('I', (yyvsp[-4].a), (yyvsp[-1].a), NULL);
 		}
-#line 1693 "regras.tab.c"
+#line 1290 "regras.tab.c"
     break;
 
   case 6: /* stmt: IF '(' exp ')' '{' list '}' ELSE '{' list '}'  */
-#line 464 "regras.y"
+#line 61 "regras.y"
                 {
 			(yyval.a) = newflow('I', (yyvsp[-8].a), (yyvsp[-5].a), (yyvsp[-1].a));
 		}
-#line 1701 "regras.tab.c"
+#line 1298 "regras.tab.c"
     break;
 
   case 7: /* stmt: WHILE '(' exp ')' '{' list '}'  */
-#line 469 "regras.y"
+#line 66 "regras.y"
                 {
 			(yyval.a) = newflow('W', (yyvsp[-4].a), (yyvsp[-1].a), NULL);
 		}
-#line 1709 "regras.tab.c"
+#line 1306 "regras.tab.c"
     break;
 
   case 8: /* stmt: VARS '=' exp  */
-#line 473 "regras.y"
+#line 70 "regras.y"
                 {
 			(yyval.a) = newasgn((yyvsp[-2].str),(yyvsp[0].a));
 		}
-#line 1717 "regras.tab.c"
+#line 1314 "regras.tab.c"
     break;
 
   case 9: /* stmt: PRINT '(' exp ')'  */
-#line 477 "regras.y"
+#line 74 "regras.y"
                 {
 			(yyval.a) = newast('C',(yyvsp[-1].a),NULL);
 		}
-#line 1725 "regras.tab.c"
+#line 1322 "regras.tab.c"
     break;
 
   case 10: /* stmt: PRINT_S '(' exp1 ')'  */
-#line 481 "regras.y"
+#line 78 "regras.y"
                 {
 			(yyval.a) = newast('Y',(yyvsp[-1].a),NULL);
 		}
-#line 1733 "regras.tab.c"
+#line 1330 "regras.tab.c"
     break;
 
   case 11: /* stmt: READ_S '(' VARS ')'  */
-#line 485 "regras.y"
+#line 82 "regras.y"
                 {
 			(yyval.a) = newvari('Z',(yyvsp[-1].str));
 		}
-#line 1741 "regras.tab.c"
+#line 1338 "regras.tab.c"
     break;
 
   case 12: /* stmt: ESCREVA_TEXTO '(' exp1 ')'  */
-#line 488 "regras.y"
+#line 85 "regras.y"
                                      { (yyval.a) = newast('p',(yyvsp[-1].a),NULL);}
-#line 1747 "regras.tab.c"
+#line 1344 "regras.tab.c"
     break;
 
   case 13: /* stmt: READ '(' VARS ')'  */
-#line 489 "regras.y"
+#line 86 "regras.y"
                             {(yyval.a) = newvari('G', (yyvsp[-1].str));}
-#line 1753 "regras.tab.c"
+#line 1350 "regras.tab.c"
     break;
 
   case 14: /* stmt: FLOAT VARS  */
-#line 491 "regras.y"
+#line 88 "regras.y"
                 {
 			(yyval.a) = newvari('V',(yyvsp[0].str));
 		}
-#line 1761 "regras.tab.c"
+#line 1358 "regras.tab.c"
     break;
 
   case 15: /* stmt: INT VARS  */
-#line 495 "regras.y"
+#line 92 "regras.y"
                 {
 			(yyval.a) = newvari('T',(yyvsp[0].str));
 		}
-#line 1769 "regras.tab.c"
+#line 1366 "regras.tab.c"
     break;
 
   case 16: /* stmt: STRING VARS  */
-#line 499 "regras.y"
+#line 96 "regras.y"
                 {
 			(yyval.a) = newvari('B', (yyvsp[0].str));
 		}
-#line 1777 "regras.tab.c"
+#line 1374 "regras.tab.c"
     break;
 
   case 17: /* stmt: INT VARS '[' NUM ']'  */
-#line 502 "regras.y"
+#line 99 "regras.y"
                              { (yyval.a) = newarray('a', (yyvsp[-3].str), (yyvsp[-1].flo));}
-#line 1783 "regras.tab.c"
+#line 1380 "regras.tab.c"
     break;
 
   case 18: /* stmt: FLOAT VARS '[' NUM ']'  */
-#line 503 "regras.y"
+#line 100 "regras.y"
                                { (yyval.a) = newarray('a', (yyvsp[-3].str), (yyvsp[-1].flo));}
-#line 1789 "regras.tab.c"
+#line 1386 "regras.tab.c"
     break;
 
   case 19: /* stmt: VARS '[' NUM ']' '=' exp  */
-#line 504 "regras.y"
+#line 101 "regras.y"
                                  {(yyval.a) = newasgn_a((yyvsp[-5].str),(yyvsp[0].a),(yyvsp[-3].flo));}
-#line 1795 "regras.tab.c"
+#line 1392 "regras.tab.c"
     break;
 
   case 20: /* list: stmt  */
-#line 508 "regras.y"
+#line 105 "regras.y"
               {(yyval.a) = (yyvsp[0].a);}
-#line 1801 "regras.tab.c"
+#line 1398 "regras.tab.c"
     break;
 
   case 21: /* list: list stmt  */
-#line 509 "regras.y"
+#line 106 "regras.y"
                             { (yyval.a) = newast('L', (yyvsp[-1].a), (yyvsp[0].a));	}
-#line 1807 "regras.tab.c"
+#line 1404 "regras.tab.c"
     break;
 
   case 22: /* exp: exp '+' exp  */
-#line 513 "regras.y"
+#line 110 "regras.y"
                      {(yyval.a) = newast('+',(yyvsp[-2].a),(yyvsp[0].a));}
-#line 1813 "regras.tab.c"
+#line 1410 "regras.tab.c"
     break;
 
   case 23: /* exp: exp '-' exp  */
-#line 514 "regras.y"
+#line 111 "regras.y"
                      {(yyval.a) = newast('-',(yyvsp[-2].a),(yyvsp[0].a));}
-#line 1819 "regras.tab.c"
+#line 1416 "regras.tab.c"
     break;
 
   case 24: /* exp: exp '*' exp  */
-#line 515 "regras.y"
+#line 112 "regras.y"
                      {(yyval.a) = newast('*',(yyvsp[-2].a),(yyvsp[0].a));}
-#line 1825 "regras.tab.c"
+#line 1422 "regras.tab.c"
     break;
 
   case 25: /* exp: exp '/' exp  */
-#line 516 "regras.y"
+#line 113 "regras.y"
                      {(yyval.a) = newast('/',(yyvsp[-2].a),(yyvsp[0].a));}
-#line 1831 "regras.tab.c"
+#line 1428 "regras.tab.c"
     break;
 
   case 26: /* exp: XP '(' exp '^' exp ')'  */
-#line 517 "regras.y"
+#line 114 "regras.y"
                                 {(yyval.a) = newast('X', (yyvsp[-3].a), (yyvsp[-1].a));}
-#line 1837 "regras.tab.c"
+#line 1434 "regras.tab.c"
     break;
 
   case 27: /* exp: ICC '(' exp ')'  */
-#line 518 "regras.y"
+#line 115 "regras.y"
                          {(yyval.a) = newast('E', (yyvsp[-1].a), NULL);}
-#line 1843 "regras.tab.c"
+#line 1440 "regras.tab.c"
     break;
 
   case 28: /* exp: DECC '(' exp ')'  */
-#line 519 "regras.y"
+#line 116 "regras.y"
                           {(yyval.a) = newast('D', (yyvsp[-1].a), NULL);}
-#line 1849 "regras.tab.c"
+#line 1446 "regras.tab.c"
     break;
 
   case 29: /* exp: RAIZ '(' exp ')'  */
-#line 520 "regras.y"
+#line 117 "regras.y"
                           {(yyval.a) = newast('R', (yyvsp[-1].a), NULL);}
-#line 1855 "regras.tab.c"
+#line 1452 "regras.tab.c"
     break;
 
   case 30: /* exp: exp CMP exp  */
-#line 521 "regras.y"
+#line 118 "regras.y"
                      {(yyval.a) = newcmp((yyvsp[-1].fn),(yyvsp[-2].a),(yyvsp[0].a));}
-#line 1861 "regras.tab.c"
+#line 1458 "regras.tab.c"
     break;
 
   case 31: /* exp: '(' exp ')'  */
-#line 522 "regras.y"
+#line 119 "regras.y"
                      {(yyval.a) = (yyvsp[-1].a);}
-#line 1867 "regras.tab.c"
+#line 1464 "regras.tab.c"
     break;
 
   case 32: /* exp: '-' exp  */
-#line 523 "regras.y"
+#line 120 "regras.y"
                            {(yyval.a) = newast('M',(yyvsp[0].a),NULL);}
-#line 1873 "regras.tab.c"
+#line 1470 "regras.tab.c"
     break;
 
   case 33: /* exp: NUM  */
-#line 524 "regras.y"
+#line 121 "regras.y"
              {(yyval.a) = newnumInt((yyvsp[0].flo));}
-#line 1879 "regras.tab.c"
+#line 1476 "regras.tab.c"
     break;
 
   case 34: /* exp: TEXTO  */
-#line 525 "regras.y"
+#line 122 "regras.y"
                {(yyval.a) = newString((yyvsp[0].str));}
-#line 1885 "regras.tab.c"
+#line 1482 "regras.tab.c"
     break;
 
   case 35: /* exp: INT  */
-#line 526 "regras.y"
+#line 123 "regras.y"
              {(yyval.a) = newnumInt((yyvsp[0].inter));}
-#line 1891 "regras.tab.c"
+#line 1488 "regras.tab.c"
     break;
 
   case 36: /* exp: FLOAT  */
-#line 527 "regras.y"
+#line 124 "regras.y"
                {(yyval.a) = newnumFloat((yyvsp[0].flo));}
-#line 1897 "regras.tab.c"
+#line 1494 "regras.tab.c"
     break;
 
   case 37: /* exp: VARS  */
-#line 528 "regras.y"
+#line 125 "regras.y"
                           {(yyval.a) = newValorVal((yyvsp[0].str));}
-#line 1903 "regras.tab.c"
+#line 1500 "regras.tab.c"
     break;
 
   case 38: /* exp: VARS '[' NUM ']'  */
-#line 529 "regras.y"
+#line 126 "regras.y"
                         {(yyval.a) = newValorVal_a((yyvsp[-3].str), (yyvsp[-1].flo));}
-#line 1909 "regras.tab.c"
+#line 1506 "regras.tab.c"
     break;
 
   case 39: /* exp1: VARS  */
-#line 533 "regras.y"
+#line 130 "regras.y"
              {(yyval.a) = newValorValS((yyvsp[0].str));}
-#line 1915 "regras.tab.c"
+#line 1512 "regras.tab.c"
     break;
 
   case 40: /* exp1: TEXTO  */
-#line 534 "regras.y"
+#line 131 "regras.y"
                 {(yyval.a) = newString((yyvsp[0].str));}
-#line 1921 "regras.tab.c"
+#line 1518 "regras.tab.c"
     break;
 
 
-#line 1925 "regras.tab.c"
+#line 1522 "regras.tab.c"
 
       default: break;
     }
@@ -2114,7 +1711,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 536 "regras.y"
+#line 133 "regras.y"
 
 
 #include "lex.yy.c"
