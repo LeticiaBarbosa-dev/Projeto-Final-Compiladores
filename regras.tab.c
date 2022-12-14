@@ -1717,6 +1717,8 @@ yyreturnlab:
 int main(){
 	
 	yyin=fopen("contador.lbscript","r");
+	//yyin=fopen("areaFormasGeometricas.lbscript","r");
+	// yyin=fopen("jurosSimples.lbscript","r");
 	yyparse();
 	yylex();
 	fclose(yyin);
